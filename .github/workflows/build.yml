@@ -40,6 +40,6 @@ jobs:
           docker build -t tic-tac-toe .
           docker tag tic-tac-toe majeedkhan09890/tic-tac-toe:latest
           echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
-          docker push majeedkhan09890/tic-tac-toe:latest
+          docker push majeedkhan09890/tic-tac-toe:tagname
         env:
           DOCKER_CLI_ACI: 1
