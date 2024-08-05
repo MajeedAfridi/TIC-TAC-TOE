@@ -46,4 +46,4 @@ jobs:
           DOCKER_CLI_ACI: 1
 
       - name: Run the container
-        run: docker run -d --name ticgame -p 3000:3000 sevenajay/tic-tac-toe:latest
+        run: docker run -d --name ticgame -p 3000:3000 majeedkhan09890/tic-tac-toe:latest
