@@ -8,7 +8,7 @@ on:
 jobs:
   build-analyze-scan:
     name: Build and Analyze
-    runs-on: ubuntu-latest
+    runs-on: self-hosted
     steps:
       - name: Enable debug logging
         run: echo "##[debug]Debugging is enabled"
