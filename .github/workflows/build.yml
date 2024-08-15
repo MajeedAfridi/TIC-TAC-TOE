@@ -8,22 +8,56 @@ on:
 jobs:
   build-analyze-scan:
     name: Build and Analyze
-    runs-on: self-hosted
+    runs-on: ubuntu-latest
     steps:
-      - name: Enable debug logging
-        run: echo "##[debug]Debugging is enabled"
-
       - uses: actions/checkout@v2
         with:
-          fetch-depth: 0
+          fetch-depth: 0  # Shallow clones should be disabled for better analysis relevancy
 
       - uses: sonarsource/sonarqube-scan-action@master
         env:
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
-
+          
       # Uncomment the following lines to fail the job when the Quality Gate is red
       # - uses: sonarsource/sonarqube-quality-gate-action@master
       #   timeout-minutes: 5
       #   env:
       #     SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+
+      - name: Install Trivy
+        run: |
+          sudo apt-get install -y wget
+          wget https://github.com/aquasecurity/trivy/releases/download/v0.34.0/trivy_0.34.0_Linux-64bit.deb
+          sudo dpkg -i trivy_0.34.0_Linux-64bit.deb
+          
+      - name: Run Trivy scan
+        run: |
+          trivy fs . > trivyfs.txt
+      - name: Docker build and push
+        run: |
+          docker build -t tic-tac-toe .
+          docker tag tic-tac-toe majeedkhan09890/tic-tac-toe:latest
+          echo "${{ secrets.DOCKERHUB_TOKEN }}" | docker login -u ${{ secrets.DOCKERHUB_USERNAME }} --password-stdin
+          docker push majeedkhan09890/tic-tac-toe:latest
+        env:
+          DOCKER_CLI_ACI: 1
+
+  deploy:
+    needs: build-analyze-scan
+    runs-on: self-hosted # Use your self-hosted runner label here
+    steps:
+      - name: Pull the Docker image
+        run: docker pull majeedkhan09890/tic-tac-toe:latest
+
+      - name: Trivy image scan
+        run: trivy image majeedkhan09890/tic-tac-toe:latest # Add Trivy scan command here
+
+      - name: Run the container
+        run: docker run -d --name ticgame -p 3000:3000 majeedkhan09890/tic-tac-toe:latest
+      
+      - name: Update kubeconfig
+        run: aws eks --region ap-south-1 update-kubeconfig --name EKS_CLOUD
+
+      - name: Deploy to EKS
+        run: kubectl apply -f deployment-service.yml
